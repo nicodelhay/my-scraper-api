@@ -20,6 +20,8 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from dateutil import parser as dateparser
 
+from typing import Dict, List, Optional, Tuple
+
 BASE_URL = "https://www.econostream-media.com"
 START_URL = f"{BASE_URL}/news"
 
@@ -318,27 +320,28 @@ def fetch_article(url: str, session: Optional[requests.Session] = None) -> Dict[
 def scrape_full(
     start_url: str = START_URL,
     max_pages: Optional[int] = 1,
+    offset: int = 0,
     limit: Optional[int] = None,
     delay_sec: float = 0.4,
-) -> List[Dict[str, Optional[str]]]:
+) -> Tuple[List[Dict[str, Optional[str]]], int]:
     """
-    Récupère les URLs, puis télécharge et parse chaque article.
-
-    Paramètres:
-      - max_pages : pagination /news (None = toutes)
-      - limit     : nombre max d’articles détaillés (sur l’ensemble)
-      - delay_sec : temporisation entre requêtes
+    Récupère les URLs (max_pages), puis télécharge/parse uniquement
+    le slice demandé: [offset : offset+limit]. Renvoie (items, total_urls).
     """
     session = _make_session()
     try:
         urls = extract_all_news_links(start_url=start_url, max_pages=max_pages, delay_sec=delay_sec)
-        if limit is not None:
-            urls = urls[:max(0, int(limit))]
+        total = len(urls)
+
+        if offset < 0:
+            offset = 0
+        sel = urls[offset: offset + limit] if (limit is not None) else urls[offset:]
+
         results: List[Dict[str, Optional[str]]] = []
-        for u in urls:
+        for u in sel:
             html = _fetch_html(session, u)
             results.append(parse_article_html(html, u))
             time.sleep(delay_sec)
-        return results
+        return results, total
     finally:
         session.close()
