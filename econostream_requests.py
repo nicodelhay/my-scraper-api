@@ -172,6 +172,7 @@ TITLE_SELECTORS = [
 ]
 
 _AUTHOR_RE = re.compile(r"^\s*By\s+([^–—\-]+)\s+[–—\-]\s*", re.IGNORECASE)
+_LOC_RE = re.compile(r"[–—\-]\s*([^()]+?)\s*\(Econostream\)\s*[–—\-]")
 
 
 def _extract_meta_published(soup: BeautifulSoup) -> Optional[str]:
@@ -225,10 +226,6 @@ def _first_meaningful_paragraph(paragraphs: List[str]) -> Optional[str]:
 
 
 def _extract_author_and_location(text: str) -> Tuple[Optional[str], Optional[str]]:
-    """
-    Cherche un motif 'By <Author> – CITY (Econostream) –' dans les premières lignes.
-    Retourne (author, location) si trouvé.
-    """
     head = text[:300]
     author = None
     location = None
@@ -236,10 +233,10 @@ def _extract_author_and_location(text: str) -> Tuple[Optional[str], Optional[str
     m = _AUTHOR_RE.search(head)
     if m:
         author = _clean(m.group(1))
-        loc_m = re.search(r"[–—\-]\s*([A-Za-zÀ-ÖØ-öø-ÿ\.\s]+?)\s*\(Econostream\)\s*[–—\-]", head)
+        # remplace l'ancienne recherche par :
+        loc_m = _LOC_RE.search(head)
         if loc_m:
             location = _clean(loc_m.group(1))
-
     return author, location
 
 
