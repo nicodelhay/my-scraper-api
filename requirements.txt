@@ -1,5 +1,4 @@
 fastapi
-uvicorn
-selenium
+uvicorn[standard]
+requests
 beautifulsoup4
-webdriver-manager
